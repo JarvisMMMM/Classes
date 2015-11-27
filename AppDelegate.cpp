@@ -45,7 +45,7 @@ bool AppDelegate::applicationDidFinishLaunching() {
     auto scene = LogoMediator::createScene();
     #else
     
-    auto scene = GameScene::createScene(makesnowmanType);
+    auto scene = GameScene::createScene(makesleepType);
 //    auto scene = StartScene::createScene();
     #endif
     Director::getInstance()->replaceScene(scene);

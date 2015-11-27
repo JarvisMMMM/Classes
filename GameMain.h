@@ -26,6 +26,7 @@ public:
     static GameMain* gameMainInstance;
     Node* makeUpNode;
     Node* makeUpNode1;
+    Node* makeUpNode2;
     Node* menuNode;
     bool init();
     CREATE_FUNC(GameMain);

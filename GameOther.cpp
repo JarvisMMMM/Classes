@@ -553,3 +553,16 @@ int GameOther::getStrNumber(const string& bigStr, const string& shortStr)
     int number = std::atoi(ss.c_str());
     return number;
 }
+
+Image* GameOther::createImageFromSprite(cocos2d::Sprite *pSpr)
+{
+    Sprite* pNewSpr = Sprite::createWithSpriteFrame(pSpr->displayFrame());
+    pNewSpr->setAnchorPoint(Vec2(0, 0));
+    RenderTexture* pRender = RenderTexture::create(pNewSpr->getContentSize().width, pNewSpr->getContentSize().height, kCCTexture2DPixelFormat_RGBA8888);
+    pRender->begin();
+    pNewSpr->visit();
+    pRender->end();
+    auto renderer = Director::getInstance()->getRenderer();
+    renderer->render();
+    return pRender->newImage();
+}

@@ -18,6 +18,7 @@
 #include "DressUpMediator.h"
 #include "MakeCard.h"
 #include "MakeSnowMan.h"
+#include "MakeAndSleep.h"
 
 #define     LAYER_TAG           1001
 #define     YINGHUOCHONG_LIZI       1002
@@ -118,6 +119,16 @@ void GameScene::initRoomContent()
     }else if(_houseIndex == makesnowmanType)
     {
         MakeSnowMan* button = MakeSnowMan::create();
+        button->setPageMaxNum(1);
+        this->addChild(button);
+        button->setTag(100);
+        Node* node = ((GameMain*)gameMediator)->gameMainInstance->makeUpNode;
+        button->setReaderUINode(node);
+        //        hasLeft = true;
+        //        hasRight = true;
+    }else if(_houseIndex == makesleepType)
+    {
+        MakeAndSleep* button = MakeAndSleep::create();
         button->setPageMaxNum(1);
         this->addChild(button);
         button->setTag(100);

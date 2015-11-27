@@ -33,6 +33,8 @@ enum houseType
     stickType,
     makecardType,
     makesnowmanType,
+    makesleepType,
+    makechristmasType,
 };
 
 class GameScene : public Layer

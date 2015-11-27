@@ -82,6 +82,7 @@ public:
     static void starEffect(Node* bg, float scale = 1);
     static void clearEffect();
     static int getStrNumber(const std::string& bigStr, const std::string& shortStr);
+    static Image* createImageFromSprite(cocos2d::Sprite *pSpr);
     
 };
 

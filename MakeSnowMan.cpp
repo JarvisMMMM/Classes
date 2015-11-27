@@ -15,9 +15,22 @@
 
 #define     QUYU_NAME                       "quyu_snowman"
 
-#define             VERTICAL_LIST_TAG           100
+#define     VERTICAL_LIST_TAG           100
 
-#define         GIRL_W          156
+#define     GIRL_W          156
+
+#define         HEAD_ZORDER             1
+#define         FACE_ZORDER             2
+
+#define STR_NORMAL_RENG     "normal_rengxueqiu"
+#define STR_XIAO            "xiao"
+#define STR_JINGYA          "jingya"
+#define STR_DAIJI           "daiji"
+#define STR_XIAO_RENG       "xiao_rengxueqiu"
+#define STR_CHIXUXIAO       "chixuxiao"
+#define STR_CHIXUJINGYA     "chixujingya"
+#define STR_JINGYA_TO_NOMAL "jingya_normal"
+#define STR_XIAO_TO_NOMAL   "xiao_normal"
 
 void MakeSnowMan::onEnter()
 {
@@ -34,6 +47,8 @@ void MakeSnowMan::onRun()
     exp = 0;
     expValue = 0;
     _bodyIndex = 0;
+    _headIndex = 0;
+    playerIndex = 0;
     isJiazi = false;
     isTouch = true;
     _isCanMove = true;
@@ -45,8 +60,11 @@ void MakeSnowMan::onRun()
     _csbNode = GameMain::gameMainInstance->makeUpNode1;
     _xueqiu = this->getReaderUINode()->getChildByName("xueqiu_in");
     _chanzi = this->getReaderUINode()->getChildByName("chanzi1_snowman");
+    _snowmanNode = this->getReaderUINode()->getChildByName("snowman");
+    _playerNode = GameMain::gameMainInstance->makeUpNode2;
     xueqiuOutVec = _xueqiu->getPosition();
     instance = this;
+    
 }
 
 bool MakeSnowMan::onTouchBegan(Touch *touch, Event *unused_event)
@@ -62,23 +80,31 @@ bool MakeSnowMan::onTouchBegan(Touch *touch, Event *unused_event)
     {
         return true;
     }
-    if(GameOther::getIsClickNode(touming, touch->getLocation()))
+    if(GameOther::getIsClickNode(touming, _beginVec2))
     {
         return true;
     }else
     {
         log("87");
-        if(GameOther::getIsClickNode(_listNode->getChildByName("guanbi_snowman"), touch->getLocation()))
+        if(GameOther::getIsClickNode(_listNode->getChildByName("guanbi_snowman"), _beginVec2))
         {
-            jiaziMoveOut(touch);
+            jiaziMoveOut();
             return true;
         }
         if(judgeListMove())
             return true;
         if(buttonTouch(touch))
             return true;
-        if(jiaziMoveOut(touch))
+        if(jiaziMoveOut())
             return true;
+        if(throwsnowBallTouch(touch))
+            return true;
+        if(girlsThrowsnowBallTouch(touch))
+            return true;
+        if(GameOther::getIsClickNode(this->getReaderUINode()->getChildByName("duihao_kapian"), _beginVec2))
+        {
+            saveSnowManAndEnterDaxuezhang();
+        }
         log("92");
     }
     DropMediator::setMenuLayerTouch(GameScene::gameScene->menuLayerInstance, touch);
@@ -358,18 +384,21 @@ void MakeSnowMan::onListClick(Sprite* sprite, int index)
             shakeHands();
         }), NULL));
         _bodyIndex = index;
-        _xuerenNode = this->getReaderUINode()->getChildByName("snowman")->getChildren().at(2 + _bodyIndex);
+        string str[] = {"xueren", "cat", "rabbit", "panda"};
+        _xuerenNode = _snowmanNode->getChildByName(str[index]);
     }else if(DropMediator::_curListType == snowHeadType)
     {
-        initXuerenHead(_bodyIndex);
+        initXuerenHead(_headIndex);
         _xueqiu->setVisible(true);
         _xueqiu->runAction(Sequence::create(MoveTo::create(0.2, Vec2(WINDOW_WIDTH/2, _xueqiu->getPositionY())),
                                             CallFunc::create([=](){
             expValue = 0;
             shakeHands();
         }), NULL));
-        _bodyIndex = index;
-        _xuerenNode = this->getReaderUINode()->getChildByName("snowman")->getChildren().at(2 + _bodyIndex);
+        _headIndex = index;
+        string str[] = {"xueren", "cat", "rabbit", "panda"};
+        _xuerenNode = _snowmanNode->getChildByName(str[index]);
+        _xuerenNode->setZOrder(HEAD_ZORDER);
     }else if(DropMediator::_curListType == snowFaceType)
     {
         char parStr[40];
@@ -418,10 +447,11 @@ void MakeSnowMan::dressFlyUp(Sprite* sprite, const char* partName, const char* p
 {
     if(isSounds)
         GameSoundManager::getInstance()->playEffect(XUANZUAN);
-    Sprite* partSprite = (Sprite*)this->getReaderUINode()->getChildByName("snowman")->getChildByName(partName);
+    Sprite* partSprite = (Sprite*)_snowmanNode->getChildByName(partName);
     if(!partSprite)
     {
-        partSprite = (Sprite*)this->getReaderUINode()->getChildByName("snowman")->getChildByName("yan_face_snowman")->getChildByName(partName);
+        partSprite = (Sprite*)_snowmanNode->getChildByName("yan_face_snowman")->getChildByName(partName);
+        _snowmanNode->getChildByName("yan_face_snowman")->setVisible(true);
     }
     char meitongstr[40];
     sprintf(meitongstr, pngName, idx);
@@ -441,20 +471,23 @@ void MakeSnowMan::dressFlyUp(Sprite* sprite, const char* partName, const char* p
         if(isEye)
         {
             for(auto node :
-                this->getReaderUINode()->getChildByName("snowman")->getChildByName("yan_face_snowman")->getChildren())
+                _snowmanNode->getChildByName("yan_face_snowman")->getChildren())
             {
                 node->setVisible(false);
             }
             if(idx == 2)
             {
-                Sprite* partSprite1 = (Sprite*)this->getReaderUINode()->getChildByName("snowman")->getChildByName("yan_face_snowman")->getChildByName("yan5_face_snowman");
+                Sprite* partSprite1 = (Sprite*)_snowmanNode->getChildByName("yan_face_snowman")->getChildByName("yan5_face_snowman");
                 partSprite1->setVisible(true);
                 partSprite1->setTexture("yan5_face_snowman.png");
+//                partSprite1->setZOrder(FACE_ZORDER);
             }
+            partSprite->getParent()->setZOrder(FACE_ZORDER);
         }
         
         partSprite->setVisible(true);
         partSprite->setTexture(meitongstr);
+        partSprite->setZOrder(FACE_ZORDER);
     }), NULL));
     
     
@@ -499,6 +532,12 @@ void MakeSnowMan::onVirtualDropMove(Touch* pTouch)
                     _xueqiu->setPosition(xueqiuOutVec);
                     onEndCallBack();
                     _isCanMove = true;
+                    _snowmanNode->getChildByName("suixue_snowman")->setVisible(true);
+                    _snowmanNode->getChildByName("suixue_snowman")->setOpacity(0);
+                    _snowmanNode->getChildByName("suixue_snowman")->runAction(FadeIn::create(1));
+                    _snowmanNode->getChildByName("touying_snowman")->setVisible(true);
+                    _snowmanNode->getChildByName("touying_snowman")->setOpacity(0);
+                    _snowmanNode->getChildByName("touying_snowman")->runAction(FadeIn::create(1));
                     if(_bodyIndex == 1 || _bodyIndex == 2)
                         _chanzi->runAction(Sequence::create(MoveTo::create(0.2, Vec2(WINDOW_WIDTH/2, _chanzi->getPositionY())),
                                                             NULL));
@@ -516,9 +555,16 @@ void MakeSnowMan::onVirtualDropMove(Touch* pTouch)
                 }), DelayTime::create(0.2), CallFunc::create([=](){
                     head->setVisible(true);
                     //                getClickTargetNode()->setVisible(false);
-                    getClickTargetNode()->setPosition(xueqiuOutVec);
+                    _xueqiu->setPosition(xueqiuOutVec);
                     onEndCallBack();
-                    
+                    _snowmanNode->getChildByName("jing_zhedang_snowman")->setVisible(true);
+                    _snowmanNode->getChildByName("jing_zhedang_snowman")->setOpacity(0);
+                    _snowmanNode->getChildByName("jing_zhedang_snowman")->runAction(FadeIn::create(1));
+                    _snowmanNode->getChildByName("jing_zhedang_snowman")->setZOrder(FACE_ZORDER);
+                    _snowmanNode->getChildByName("saihong_face_snowman")->setVisible(true);
+                    _snowmanNode->getChildByName("saihong_face_snowman")->setOpacity(0);
+                    _snowmanNode->getChildByName("saihong_face_snowman")->runAction(FadeIn::create(1));
+                    _snowmanNode->getChildByName("saihong_face_snowman")->setZOrder(FACE_ZORDER);
                     _isCanMove = true;
                 }), NULL));
                 
@@ -586,7 +632,7 @@ void MakeSnowMan::decodeGameEffect(Touch* touch)
                 chanzi->setVisible(true);
                 float roa = chanzi->getRotation();
                 chanzi->runAction(Sequence::create(Repeat::create(Sequence::create(RotateBy::create(0.2, -10), RotateTo::create(0.2, roa), DelayTime::create(0.4), NULL), 3), Hide::create(), NULL));
-                Animation* ani = createAnimation(chanzi);
+                Animation* ani = createAnimation(chanziAniType);
                 auto aniNode = this->getReaderUINode()->getChildByName("xuexiedonghua");
                 aniNode->runAction(Repeat::create(Animate::create(ani), 3));
                 weiba1->setVisible(true);
@@ -636,7 +682,7 @@ void MakeSnowMan::jiaziMoveIn()
     
 }
 
-bool MakeSnowMan::jiaziMoveOut(Touch* touch)
+bool MakeSnowMan::jiaziMoveOut()
 {
     if(isJiazi && _listNode->isVisible())
     {
@@ -700,11 +746,12 @@ void MakeSnowMan::setChanziGuideHide(Node* node)
     node->setVisible(false);
 }
 
-Animation* MakeSnowMan::createAnimation(Node* node)
+Animation* MakeSnowMan::createAnimation(int type)
 {
     Animation* animation = Animation::create();
     int count;
-    if(node->getName() == "chanzi2_snowman")
+    float aniTime = 0.3f;
+    if(chanziAniType == type)
     {
         count = 3;
         char str[40];
@@ -713,8 +760,48 @@ Animation* MakeSnowMan::createAnimation(Node* node)
             sprintf(str, "xuehua%d_chanzi_snowman.png", i+1);
             animation->addSpriteFrameWithFile(str);
         }
+    }else if(snowballAniType == type)
+    {
+        count = 4;
+        char str[40];
+        aniTime = 0.2f;
+        for(int i = 0 ; i < count; i++)
+        {
+            sprintf(str, "pingmushang%d_xueqiu.png", i+1);
+            animation->addSpriteFrameWithFile(str);
+        }
+    }else if(dishangAniType == type)
+    {
+        count = 3;
+        char str[40];
+        aniTime = 0.2f;
+        for(int i = count - 1 ; i >= 0; i--)
+        {
+            sprintf(str, "dishang%d_xueqiu.png", i+1);
+            animation->addSpriteFrameWithFile(str);
+        }
+    }else if(qiangshangAniType == type)
+    {
+        count = 3;
+        char str[40];
+        aniTime = 0.2f;
+        for(int i = count - 1 ; i >= 0; i--)
+        {
+            sprintf(str, "qiangshang%d_xueqiu.png", i+1);
+            animation->addSpriteFrameWithFile(str);
+        }
+    }else if(zhalieAniType == type)
+    {
+        count = 2;
+        char str[40];
+        aniTime = 0.2f;
+        for(int i = 0 ; i < count; i++)
+        {
+            sprintf(str, "zhalie%d_xueqiu.png", i+1);
+            animation->addSpriteFrameWithFile(str);
+        }
     }
-    animation->setDelayPerUnit(0.3);
+    animation->setDelayPerUnit(aniTime);
     animation->setLoops(1);
     animation->setRestoreOriginalFrame(true);
     return animation;
@@ -722,18 +809,304 @@ Animation* MakeSnowMan::createAnimation(Node* node)
 
 void MakeSnowMan::initXuerenBody(int index)
 {
-    auto xuerenNode = this->getReaderUINode()->getChildByName("snowman")->getChildren().at(2 + index);
+    string str[] = {"xueren", "cat", "rabbit", "panda"};
+    auto xuerenNode = _snowmanNode->getChildByName(str[index]);
     for(auto node : xuerenNode->getChildren())
     {
         node->setVisible(false);
     }
+    _snowmanNode->getChildByName("suixue_snowman")->setVisible(false);
+    _snowmanNode->getChildByName("touying_snowman")->setVisible(false);
 //    auto body = xuerenNode->getChildByName("body_xueren_snowman");
 //    body->setVisible(false);
     initXuerenHead(index);
 }
 void MakeSnowMan::initXuerenHead(int index)
 {
-    auto xuerenNode = this->getReaderUINode()->getChildByName("snowman")->getChildren().at(2 + index);
+    string str[] = {"xueren", "cat", "rabbit", "panda"};
+    auto xuerenNode = _snowmanNode->getChildByName(str[index]);
     auto head = xuerenNode->getChildByName("tou_xueren_snowman");
     head->setVisible(false);
+    for(Node* sprite : _snowmanNode->getChildren())
+    {
+        if(sprite->getName().find("xueren") == string::npos && sprite->getName().find("cat") == string::npos &&
+           sprite->getName().find("rabbit") == string::npos && sprite->getName().find("panda") == string::npos &&
+           sprite->getName().find("suixue_snowman") == string::npos && sprite->getName().find("touying_snowman") == string::npos)
+        ((Sprite*)sprite)->setVisible(false);
+    }
+    for(Node* sprite : _snowmanNode->getChildByName("yan_face_snowman")->getChildren())
+    {
+        ((Sprite*)sprite)->setVisible(false);
+    }
+}
+
+void MakeSnowMan::armatureAnimation(Node* node, string armatureName, int index)
+{
+//    if(!node->isVisible())
+//    {
+//        return;
+//    }
+//    int zorder = -1;
+//    node->setVisible(false);
+    string str = armatureName+".ExportJson";
+    ArmatureDataManager::getInstance()->addArmatureFileInfo(str);
+    Armature* armature = Armature::create(armatureName);
+    armature->setVisible(true);
+    int rand = random(0, 1);
+    int aniIndex;
+    if(rand == 0)
+    {
+        aniIndex = xiao;
+    }else
+    {
+        aniIndex = daiji;
+    }
+    _playerNode->addChild(armature, -1);
+    armature->setPosition(node->getPosition());
+    armature->setRotation(node->getRotation());
+    armature->getAnimation()->setMovementEventCallFunc(this, movementEvent_selector(MakeSnowMan::onAnimationEvent));
+    armatureVector.push_back(armature);
+    armature->runAction(Sequence::create(DelayTime::create(index*2), MoveBy::create(0.2, Vec2(0, 40)), CallFunc::create([=](){
+        _playerState[playerIndex] = normalState;
+        armature->getAnimation()->playWithIndex(aniIndex);
+        playerIndex++;
+    }), NULL));
+}
+
+void MakeSnowMan::changeArmature(Armature* armature, const string& skinName, const string& layerName, int index)
+{
+    cocostudio::Bone* bone = (cocostudio::Bone*)armature->getChildByName(layerName);
+    cocostudio::Skin *skin = cocostudio::Skin::create(skinName);
+    int boneIndex = bone->getDisplayManager()->getCurrentDisplayIndex();
+    Vector<DecorativeDisplay*> vector = bone->getDisplayManager()->getDecorativeDisplayList();
+    bone->addDisplay(skin, boneIndex);
+    bone->changeDisplayWithIndex(boneIndex, true);
+}
+
+void MakeSnowMan::onAnimationEvent(Armature *pArmature, MovementEventType eventType, string animationID)
+{
+    int index = 0;
+    for(int i = 0; i < armatureVector.size(); i++)
+    {
+        if(armatureVector.at(i) == pArmature)
+        {
+            index = i;
+            
+        }
+    }
+    if (eventType == LOOP_COMPLETE) {
+        string str = animationID;
+        if(str == STR_XIAO_RENG)
+        {
+            int rand = random(0, 1);
+            int randIndex;
+            if(rand == 0)
+            {
+                randIndex = xiao_normal;
+            }else if(rand == 1)
+            {
+                randIndex = chixuxiao;
+            }
+            pArmature->getAnimation()->playWithIndex(randIndex);
+            _playerState[index] = rengState;
+        }else if(str == STR_NORMAL_RENG)
+        {
+            int rand = random(0, 2);
+            int randIndex;
+            if(rand == 0)
+            {
+                randIndex = xiao;
+            }else if(rand == 1)
+            {
+                randIndex = jingya;
+            }else if(rand == 2)
+            {
+                randIndex = daiji;
+            }
+            pArmature->getAnimation()->playWithIndex(randIndex);
+            _playerState[index] = rengState;
+        }else if(str == STR_DAIJI)
+        {
+            
+            if(_playerState[index] == normalState)
+            {
+                pArmature->getAnimation()->playWithIndex(normal_rengxueqiu);
+                theGirlThrowSnowBall(pArmature);
+            }else if(_playerState[index] == rengState)
+            {
+                int rand = random(0, 2);
+                int randIndex;
+                if(rand == 0)
+                {
+                    randIndex = xiao;
+                }else if(rand == 1)
+                {
+                    randIndex = jingya;
+                }else if(rand == 2)
+                {
+                    randIndex = daiji;
+                }
+                this->runAction(Sequence::create(DelayTime::create(1), CallFunc::create([=](){
+                    pArmature->getAnimation()->playWithIndex(randIndex);
+                }), NULL));
+            }else if(_playerState[index] == okState)
+            {
+                pArmature->getAnimation()->playWithIndex(daiji);
+            }
+            
+        }
+    }else if(eventType == COMPLETE)
+    {
+        string str = animationID;
+        if(str == STR_XIAO)
+        {
+            if(_playerState[index] == normalState)
+            {
+                 pArmature->getAnimation()->playWithIndex(xiao_rengxueqiu);
+                 theGirlThrowSnowBall(pArmature);
+            }else if(_playerState[index] == rengState)
+            {
+                int rand = random(0, 1);
+                int randIndex;
+                if(rand == 0)
+                {
+                    randIndex = xiao_normal;
+                }else if(rand == 1)
+                {
+                    randIndex = chixuxiao;
+                }
+                this->runAction(Sequence::create(DelayTime::create(1), CallFunc::create([=](){
+                    pArmature->getAnimation()->playWithIndex(randIndex);
+                }), NULL));
+            }else if(_playerState[index] == okState)
+            {
+                pArmature->getAnimation()->playWithIndex(xiao_normal);
+            }
+        }else if(str == STR_JINGYA)
+        {
+            if(_playerState[index] == rengState)
+            {
+                this->runAction(Sequence::create(DelayTime::create(1), CallFunc::create([=](){
+                    pArmature->getAnimation()->playWithIndex(jingya_normal);
+                }), NULL));
+                
+            }else if(_playerState[index] == okState)
+            {
+                pArmature->getAnimation()->playWithIndex(jingya_normal);
+            }
+        }else if(str == STR_CHIXUXIAO || str == STR_CHIXUJINGYA || str == STR_XIAO_TO_NOMAL || str == STR_JINGYA_TO_NOMAL)
+        {
+            pArmature->runAction(Sequence::create(MoveBy::create(0.2, Vec2(0, -40)), NULL));
+        }else
+        {
+            pArmature->getAnimation()->playWithIndex(normal_rengxueqiu);
+            theGirlThrowSnowBall(pArmature);
+        }
+    }
+}
+
+void MakeSnowMan::initAnimation()
+{
+    armatureAnimation(_playerNode->getChildren().at(0), "daxuezhang", 0);
+    armatureAnimation(_playerNode->getChildren().at(1), "daxuezhang1", 1);
+    armatureAnimation(_playerNode->getChildren().at(2), "daxuezhang2", 2);
+    armatureAnimation(_playerNode->getChildren().at(3), "daxuezhang3", 3);
+}
+
+void MakeSnowMan::buttonBarMoveOut()
+{
+    auto action = MoveBy::create(0.2, Vec2(-_listNode->getChildByName("gongjulan_snowman")->getContentSize().width, 0));
+    _listNode->runAction(action);
+    _csbNode->runAction(action->clone());
+}
+
+void MakeSnowMan::snowBallMoveIn()
+{
+    auto lanzi = this->getReaderUINode()->getChildByName("lanzi");
+    Vec2 vec = lanzi->getPosition();
+    lanzi->setPositionX(-WINDOW_WIDTH/2);
+    lanzi->setVisible(true);
+    lanzi->runAction(EaseBackOut::create(MoveTo::create(0.5, vec)));
+}
+
+
+void MakeSnowMan::theGirlThrowSnowBall(Node* node)
+{
+    this->runAction(Sequence::create(DelayTime::create(0.4), CallFunc::create([=](){
+        Sprite* sp = Sprite::create("xueqiu_daxuezhang.png");
+        this->addChild(sp);
+        girlsThrowSnowBallVector.pushBack(sp);
+        sp->cocos2d::Node::setPosition(node->getPositionX() -50 + 5, node->getPositionY() + 115 - 5);
+        Vec2 targetVec = Vec2(random(0, WINDOW_WIDTH), random(0, WINDOW_HEIGHT));
+        sp->runAction(Sequence::create(Spawn::create(MoveTo::create(2, targetVec), ScaleTo::create(2, 3), NULL)
+                                       , CallFunc::create([=](){
+            Animation* ani = createAnimation(snowballAniType);
+            Sprite* aniSprite = Sprite::create();
+            this->addChild(aniSprite);
+            aniSprite->setPosition(sp->getPosition());
+            aniSprite->runAction(Animate::create(ani));
+            girlsThrowSnowBallVector.eraseObject(sp);
+        }), RemoveSelf::create(), NULL));
+    }), NULL));
+    
+}
+
+bool MakeSnowMan::throwsnowBallTouch(Touch* touch)
+{
+    auto lanzi = this->getReaderUINode()->getChildByName("lanzi");
+    auto targetPositionNode = this->getReaderUINode()->getChildByName("xueqiudonghua")->getChildByName("rengchuxueqiu");
+    Vec2 vec = touch->getLocation();
+    for(auto node : lanzi->getChildren())
+    {
+        if(node->getName().find("xueqiu") != string::npos && GameOther::getIsClickNode(node, touch->getLocation()))
+        {
+            Sprite* sp = Sprite::create("xueqiu_chanzi_snowman.png");
+            this->getReaderUINode()->addChild(sp);
+            sp->setPosition(lanzi->convertToNodeSpace(vec));
+            sp->runAction(Sequence::create(Spawn::create(MoveTo::create(1, targetPositionNode->getChildren().at((int)random(0, 6))->getPosition()), ScaleTo::create(1, 0.5), NULL), CallFunc::create([=](){
+                Animation* ani = createAnimation(dishangAniType);
+                Sprite* aniSprite = Sprite::create();
+                this->getReaderUINode()->addChild(aniSprite);
+                aniSprite->setPosition(sp->getPosition());
+                aniSprite->runAction(Animate::create(ani));
+            }), DelayTime::create(0.1), RemoveSelf::create(), NULL));
+            return true;
+        }
+    }
+    return false;
+}
+
+
+bool MakeSnowMan::girlsThrowsnowBallTouch(Touch* touch)
+{
+    Vec2 vec = touch->getLocation();
+    Sprite* removeSprite = NULL;
+    for(auto node : girlsThrowSnowBallVector)
+    {
+        if(GameOther::getIsClickNode(node, vec))
+        {
+            Animation* ani = createAnimation(zhalieAniType);
+            Sprite* aniSprite = Sprite::create();
+            this->addChild(aniSprite);
+            aniSprite->setPosition(node->getPosition());
+            aniSprite->runAction(Animate::create(ani));
+            removeSprite = (Sprite*)node;
+            break;
+        }
+    }
+    if(removeSprite)
+    {
+        removeSprite->removeFromParent();
+        girlsThrowSnowBallVector.eraseObject(removeSprite);
+        return true;
+    }
+    return false;
+        
+}
+
+void MakeSnowMan::saveSnowManAndEnterDaxuezhang()
+{
+    initAnimation();
+    buttonBarMoveOut();
+    snowBallMoveIn();
 }

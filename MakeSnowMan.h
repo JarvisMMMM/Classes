@@ -24,12 +24,49 @@ enum snowListType
     snowBodyType,
 };
 
+enum armatureIndexType
+{
+    normal_rengxueqiu,
+    xiao,
+    jingya,
+    daiji,
+    xiao_rengxueqiu,
+    chixuxiao,
+    chixujingya,
+    jingya_normal,
+    xiao_normal
+};
+
+enum animationType
+{
+    chanziAniType,
+    snowballAniType,
+    dishangAniType,
+    qiangshangAniType,
+    zhalieAniType,
+};
+
+enum playerState
+{
+    normalState,//刚出来没扔
+    rengState,//扔
+    okState,//扔完
+};
+
 class MakeSnowMan : public ButtonMediator
 {
 private:
+    Vector<Sprite*> girlsThrowSnowBallVector;
+    vector<Armature*> armatureVector;
+    int playerIndex;
+    int _playerState[4];
+    int _playerAniIndex[4];
+    int _headIndex;
     int _bodyIndex;
     int exp;
     int expValue;
+    Node* _playerNode;
+    Node* _snowmanNode;
     Node* _xuerenNode;
     Node* _xueqiu;
     Node* _chanzi;
@@ -62,16 +99,26 @@ private:
     void dressFlyUp(Sprite* sprite, const char* partName, const char* pngName, int idx, bool isSounds = true);
     bool buttonTouch(Touch* touch);
     bool judgeListMove();
-    bool jiaziMoveOut(Touch* touch = NULL);
+    bool jiaziMoveOut();
     void jiaziMoveIn();
     void shakeHands();
     bool itemsBeganTouch(Touch* touch);
     void setChanziGuideShow(Node* node);
     void setChanziGuideHide(Node* node);
     void decodeGameEffect(Touch* touch);
-    Animation* createAnimation(Node* node);
+    Animation* createAnimation(int type);
     void initXuerenBody(int index);
     void initXuerenHead(int index);
+    void armatureAnimation(Node* node, string armatureName, int index);
+    void onAnimationEvent(Armature *pArmature, MovementEventType eventType, string animationID);
+    void initAnimation();
+    void buttonBarMoveOut();
+    void snowBallMoveIn();
+    void theGirlThrowSnowBall(Node* node);
+    void changeArmature(Armature* armature, const string& skinName, const string& layerName, int index);
+    bool throwsnowBallTouch(Touch* touch);
+    bool girlsThrowsnowBallTouch(Touch* touch);
+    void saveSnowManAndEnterDaxuezhang();
 public:
     Node* _csbNode;
     MakeSnowMan()

@@ -42,10 +42,22 @@ bool GameMain::init()
         
     }else if(_type == makesnowmanType)
     {
+        makeUpNode2 = GameReaderManager::getNodeReaderFile("snow_player.csb", CENTER, 0);
+        this->addChild(makeUpNode2);
         makeUpNode = GameReaderManager::getNodeReaderFile("snowman.csb", CENTER, 0);
         this->addChild(makeUpNode);
         makeUpNode1 = GameReaderManager::getNodeReaderFile("snowman_ui.csb", CENTER, 0);
         this->addChild(makeUpNode1);
+    }else if(_type == makesleepType)
+    {
+        makeUpNode = GameReaderManager::getNodeReaderFile("shuijiao_zhu.csb", CENTER, 0);
+        this->addChild(makeUpNode);
+        makeUpNode2 = GameReaderManager::getNodeReaderFile("bg_shuijiao_zi.csb", CENTER, 1);
+        this->addChild(makeUpNode2);
+        makeUpNode1 = GameReaderManager::getNodeReaderFile("shuijiao_zi.csb", CENTER, 0);
+        this->addChild(makeUpNode1);
+        makeUpNode2->setVisible(false);
+        makeUpNode1->setVisible(false);
         
     }
     

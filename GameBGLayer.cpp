@@ -37,6 +37,12 @@ bool GameBGLayer::init()
     }else if(_houseIndex == makesnowmanType)
     {
         str = "bg_snowman.csb";
+    }else if(_houseIndex == makesleepType)
+    {
+        str = "bg_shuijiao_zhu.csb";
+    }else if(_houseIndex == makechristmasType)
+    {
+        str = "bg_snowman.csb";
     }
    
     Node* bg = GameReaderManager::getNodeReaderFile(str.c_str(), CENTER, 1);
